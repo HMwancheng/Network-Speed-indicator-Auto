@@ -59,6 +59,25 @@ class FloatWindowService : Service(), NetworkSpeedService.NetworkSpeedListener {
         NetworkSpeedService.setListener(null)
     }
 
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        intent?.let {
+            when (it.action) {
+                "MOVE_FLOAT_WINDOW" -> {
+                    val deltaX = it.getIntExtra("DELTA_X", 0)
+                    val deltaY = it.getIntExtra("DELTA_Y", 0)
+                    moveFloatWindow(deltaX, deltaY)
+                }
+                "RESET_FLOAT_WINDOW" -> {
+                    resetPosition()
+                }
+                "UPDATE_SETTINGS" -> {
+                    updateSettings()
+                }
+            }
+        }
+        return START_STICKY
+    }
+
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(

@@ -22,8 +22,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var floatWindowToggle: Button
     private lateinit var lockPositionSwitch: Switch
     private lateinit var lowSpeedHideSwitch: Switch
-    private lateinit var speedFormatGroup: RadioButton
-    private lateinit var textAlignmentGroup: RadioButton
     private lateinit var textSizeSeekBar: SeekBar
     private lateinit var textSizeValue: TextView
     private lateinit var showAboveStatusBarSwitch: Switch
@@ -85,33 +83,53 @@ class MainActivity : AppCompatActivity() {
         // 位置锁定开关
         lockPositionSwitch.setOnCheckedChangeListener { _, isChecked ->
             settings.isPositionLocked = isChecked
+            updateFloatWindowSettings()
         }
 
         // 低速隐藏开关
         lowSpeedHideSwitch.setOnCheckedChangeListener { _, isChecked ->
             settings.isLowSpeedHideEnabled = isChecked
+            updateFloatWindowSettings()
         }
 
         // 网速格式单选按钮
         findViewById<RadioButton>(R.id.speedFormatTotal).setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) settings.speedFormat = 0
+            if (isChecked) {
+                settings.speedFormat = 0
+                updateFloatWindowSettings()
+            }
         }
         findViewById<RadioButton>(R.id.speedFormatHorizontal).setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) settings.speedFormat = 1
+            if (isChecked) {
+                settings.speedFormat = 1
+                updateFloatWindowSettings()
+            }
         }
         findViewById<RadioButton>(R.id.speedFormatVertical).setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) settings.speedFormat = 2
+            if (isChecked) {
+                settings.speedFormat = 2
+                updateFloatWindowSettings()
+            }
         }
 
         // 文字对齐单选按钮
         findViewById<RadioButton>(R.id.textAlignmentLeft).setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) settings.textAlignment = 0
+            if (isChecked) {
+                settings.textAlignment = 0
+                updateFloatWindowSettings()
+            }
         }
         findViewById<RadioButton>(R.id.textAlignmentCenter).setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) settings.textAlignment = 1
+            if (isChecked) {
+                settings.textAlignment = 1
+                updateFloatWindowSettings()
+            }
         }
         findViewById<RadioButton>(R.id.textAlignmentRight).setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) settings.textAlignment = 2
+            if (isChecked) {
+                settings.textAlignment = 2
+                updateFloatWindowSettings()
+            }
         }
 
         // 文字大小滑块
@@ -119,6 +137,7 @@ class MainActivity : AppCompatActivity() {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 textSizeValue.text = "$progress sp"
                 settings.textSize = progress
+                updateFloatWindowSettings()
             }
 
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
@@ -128,6 +147,16 @@ class MainActivity : AppCompatActivity() {
         // 显示在状态栏上方开关
         showAboveStatusBarSwitch.setOnCheckedChangeListener { _, isChecked ->
             settings.showAboveStatusBar = isChecked
+            updateFloatWindowSettings()
+        }
+    }
+
+    // 更新悬浮窗设置
+    private fun updateFloatWindowSettings() {
+        if (settings.isFloatWindowEnabled) {
+            val intent = Intent(this, FloatWindowService::class.java)
+            intent.action = "UPDATE_SETTINGS"
+            startService(intent)
         }
     }
 
@@ -195,17 +224,45 @@ class MainActivity : AppCompatActivity() {
     // 位置微调按钮点击事件
     fun onMoveButtonClick(view: android.view.View) {
         val delta = 10 // 微调步长
+        val intent = Intent(this, FloatWindowService::class.java)
         when (view.id) {
-            R.id.moveUpButton -> settings.floatWindowY -= delta
-            R.id.moveDownButton -> settings.floatWindowY += delta
-            R.id.moveLeftButton -> settings.floatWindowX -= delta
-            R.id.moveRightButton -> settings.floatWindowX += delta
+            R.id.moveUpButton -> {
+                settings.floatWindowY -= delta
+                intent.action = "MOVE_FLOAT_WINDOW"
+                intent.putExtra("DELTA_X", 0)
+                intent.putExtra("DELTA_Y", -delta)
+                startService(intent)
+            }
+            R.id.moveDownButton -> {
+                settings.floatWindowY += delta
+                intent.action = "MOVE_FLOAT_WINDOW"
+                intent.putExtra("DELTA_X", 0)
+                intent.putExtra("DELTA_Y", delta)
+                startService(intent)
+            }
+            R.id.moveLeftButton -> {
+                settings.floatWindowX -= delta
+                intent.action = "MOVE_FLOAT_WINDOW"
+                intent.putExtra("DELTA_X", -delta)
+                intent.putExtra("DELTA_Y", 0)
+                startService(intent)
+            }
+            R.id.moveRightButton -> {
+                settings.floatWindowX += delta
+                intent.action = "MOVE_FLOAT_WINDOW"
+                intent.putExtra("DELTA_X", delta)
+                intent.putExtra("DELTA_Y", 0)
+                startService(intent)
+            }
         }
     }
 
     // 重置位置按钮点击事件
     fun onResetPositionClick(view: android.view.View) {
         settings.resetPosition()
+        val intent = Intent(this, FloatWindowService::class.java)
+        intent.action = "RESET_FLOAT_WINDOW"
+        startService(intent)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {

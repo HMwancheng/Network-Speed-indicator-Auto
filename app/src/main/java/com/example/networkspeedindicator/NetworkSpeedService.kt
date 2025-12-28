@@ -7,9 +7,6 @@ import android.net.TrafficStats
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 
 class NetworkSpeedService : Service() {
 
