@@ -6,7 +6,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
+import android.provider.Settings as SystemSettings
 import android.widget.Button
 import android.widget.RadioButton
 import android.widget.SeekBar
@@ -187,8 +187,8 @@ class MainActivity : AppCompatActivity() {
     private fun checkPermissions(): Boolean {
         // 检查悬浮窗权限
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (!Settings.canDrawOverlays(this)) {
-                val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
+            if (!SystemSettings.canDrawOverlays(this)) {
+                val intent = Intent(SystemSettings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
                 startActivityForResult(intent, REQUEST_OVERLAY_PERMISSION)
                 return false
             }
@@ -269,7 +269,7 @@ class MainActivity : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_OVERLAY_PERMISSION) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                if (Settings.canDrawOverlays(this)) {
+                if (SystemSettings.canDrawOverlays(this)) {
                     // 权限已授予，开启悬浮窗
                     startService(Intent(this, FloatWindowService::class.java))
                     settings.isFloatWindowEnabled = true
