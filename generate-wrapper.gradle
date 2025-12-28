@@ -1,0 +1,8 @@
+task generateWrapper {
+    doLast {
+        wrapper {
+            gradleVersion = '8.4'
+            distributionType = Wrapper.DistributionType.BIN
+        }
+    }
+}
