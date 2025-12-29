@@ -53,8 +53,12 @@ class FloatWindowService : Service(), NetworkSpeedService.NetworkSpeedListener {
     override fun onDestroy() {
         super.onDestroy()
         // 移除悬浮窗
-        if (::windowManager.isInitialized && ::floatView.isInitialized) {
-            windowManager.removeView(floatView)
+        try {
+            if (::windowManager.isInitialized && ::floatView.isInitialized) {
+                windowManager.removeView(floatView)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
         NetworkSpeedService.setListener(null)
     }
@@ -176,55 +180,67 @@ class FloatWindowService : Service(), NetworkSpeedService.NetworkSpeedListener {
 
     // 更新悬浮窗设置
     private fun updateFloatWindowSettings() {
-        // 更新文字颜色
-        networkSpeedText.setTextColor(settings.textColor)
-        // 更新文字大小
-        networkSpeedText.textSize = settings.textSize.toFloat()
-        // 更新文字对齐方式
-        networkSpeedText.gravity = when (settings.textAlignment) {
-            0 -> Gravity.LEFT
-            1 -> Gravity.CENTER
-            2 -> Gravity.RIGHT
-            else -> Gravity.CENTER
-        }
-        // 更新位置
-        params?.let {
-            it.x = settings.floatWindowX
-            it.y = settings.floatWindowY
-            windowManager.updateViewLayout(floatView, it)
+        // 确保所有必要的组件都已初始化
+        if (::networkSpeedText.isInitialized && ::settings.isInitialized) {
+            // 更新文字颜色
+            networkSpeedText.setTextColor(settings.textColor)
+            // 更新文字大小
+            networkSpeedText.textSize = settings.textSize.toFloat()
+            // 更新文字对齐方式
+            networkSpeedText.gravity = when (settings.textAlignment) {
+                0 -> Gravity.LEFT
+                1 -> Gravity.CENTER
+                2 -> Gravity.RIGHT
+                else -> Gravity.CENTER
+            }
+            // 更新位置
+            if (::windowManager.isInitialized && ::floatView.isInitialized && params != null) {
+                params?.let {
+                    it.x = settings.floatWindowX
+                    it.y = settings.floatWindowY
+                    try {
+                        windowManager.updateViewLayout(floatView, it)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
         }
     }
 
     // 更新网速显示
     private fun updateNetworkSpeed() {
-        // 低速隐藏功能
-        if (settings.isLowSpeedHideEnabled && downloadSpeed < 1 && uploadSpeed < 1) {
-            floatView.visibility = View.GONE
-            return
-        } else {
-            floatView.visibility = View.VISIBLE
-        }
+        // 确保所有必要的组件都已初始化
+        if (::settings.isInitialized && ::floatView.isInitialized && ::networkSpeedText.isInitialized) {
+            // 低速隐藏功能
+            if (settings.isLowSpeedHideEnabled && downloadSpeed < 1 && uploadSpeed < 1) {
+                floatView.visibility = View.GONE
+                return
+            } else {
+                floatView.visibility = View.VISIBLE
+            }
 
-        val speedText = when (settings.speedFormat) {
-            0 -> {
-                // 总 @网速
-                val totalSpeed = downloadSpeed + uploadSpeed
-                formatSpeed(totalSpeed)
+            val speedText = when (settings.speedFormat) {
+                0 -> {
+                    // 总 @网速
+                    val totalSpeed = downloadSpeed + uploadSpeed
+                    formatSpeed(totalSpeed)
+                }
+                1 -> {
+                    // 上下行横排
+                    "↓${formatSpeed(downloadSpeed)} ↑${formatSpeed(uploadSpeed)}"
+                }
+                2 -> {
+                    // 上下行竖排
+                    "↓${formatSpeed(downloadSpeed)}\n↑${formatSpeed(uploadSpeed)}"
+                }
+                else -> {
+                    val totalSpeed = downloadSpeed + uploadSpeed
+                    formatSpeed(totalSpeed)
+                }
             }
-            1 -> {
-                // 上下行横排
-                "↓${formatSpeed(downloadSpeed)} ↑${formatSpeed(uploadSpeed)}"
-            }
-            2 -> {
-                // 上下行竖排
-                "↓${formatSpeed(downloadSpeed)}\n↑${formatSpeed(uploadSpeed)}"
-            }
-            else -> {
-                val totalSpeed = downloadSpeed + uploadSpeed
-                formatSpeed(totalSpeed)
-            }
+            networkSpeedText.text = speedText
         }
-        networkSpeedText.text = speedText
     }
 
     // 格式化网速
@@ -244,28 +260,48 @@ class FloatWindowService : Service(), NetworkSpeedService.NetworkSpeedListener {
 
     // 位置微调方法
     fun moveFloatWindow(deltaX: Int, deltaY: Int) {
-        params?.let {
-            it.x += deltaX
-            it.y += deltaY
-            windowManager.updateViewLayout(floatView, it)
-            settings.floatWindowX = it.x
-            settings.floatWindowY = it.y
+        // 确保所有必要的组件都已初始化
+        if (::windowManager.isInitialized && ::floatView.isInitialized && ::settings.isInitialized && params != null) {
+            params?.let {
+                it.x += deltaX
+                it.y += deltaY
+                try {
+                    windowManager.updateViewLayout(floatView, it)
+                    settings.floatWindowX = it.x
+                    settings.floatWindowY = it.y
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
         }
     }
 
     // 重置位置
     fun resetPosition() {
-        settings.resetPosition()
-        params?.let {
-            it.x = settings.floatWindowX
-            it.y = settings.floatWindowY
-            windowManager.updateViewLayout(floatView, it)
+        // 确保所有必要的组件都已初始化
+        if (::settings.isInitialized) {
+            settings.resetPosition()
+            if (::windowManager.isInitialized && ::floatView.isInitialized && params != null) {
+                params?.let {
+                    it.x = settings.floatWindowX
+                    it.y = settings.floatWindowY
+                    try {
+                        windowManager.updateViewLayout(floatView, it)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
         }
     }
 
     // 更新设置
     fun updateSettings() {
-        updateFloatWindowSettings()
-        updateNetworkSpeed()
+        try {
+            updateFloatWindowSettings()
+            updateNetworkSpeed()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 }

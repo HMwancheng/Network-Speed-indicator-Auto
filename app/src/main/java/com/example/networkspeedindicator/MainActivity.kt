@@ -154,23 +154,38 @@ class MainActivity : AppCompatActivity() {
     // 更新悬浮窗设置
     private fun updateFloatWindowSettings() {
         if (settings.isFloatWindowEnabled) {
-            val intent = Intent(this, FloatWindowService::class.java)
-            intent.action = "UPDATE_SETTINGS"
-            startService(intent)
+            try {
+                val intent = Intent(this, FloatWindowService::class.java)
+                intent.action = "UPDATE_SETTINGS"
+                startService(intent)
+            } catch (e: Exception) {
+                Toast.makeText(this, "更新悬浮窗设置失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                e.printStackTrace()
+            }
         }
     }
 
     private fun toggleFloatWindow() {
         if (settings.isFloatWindowEnabled) {
             // 关闭悬浮窗
-            stopService(Intent(this, FloatWindowService::class.java))
-            settings.isFloatWindowEnabled = false
+            try {
+                stopService(Intent(this, FloatWindowService::class.java))
+                settings.isFloatWindowEnabled = false
+            } catch (e: Exception) {
+                Toast.makeText(this, "关闭悬浮窗失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                e.printStackTrace()
+            }
         } else {
             // 检查并请求权限
             if (checkPermissions()) {
                 // 开启悬浮窗
-                startService(Intent(this, FloatWindowService::class.java))
-                settings.isFloatWindowEnabled = true
+                try {
+                    startService(Intent(this, FloatWindowService::class.java))
+                    settings.isFloatWindowEnabled = true
+                } catch (e: Exception) {
+                    Toast.makeText(this, "开启悬浮窗失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                    e.printStackTrace()
+                }
             }
         }
         updateFloatWindowToggle()
@@ -219,50 +234,62 @@ class MainActivity : AppCompatActivity() {
             else -> android.graphics.Color.WHITE
         }
         settings.textColor = color
+        // 更新悬浮窗设置
+        updateFloatWindowSettings()
     }
 
     // 位置微调按钮点击事件
     fun onMoveButtonClick(view: android.view.View) {
         val delta = 10 // 微调步长
-        val intent = Intent(this, FloatWindowService::class.java)
-        when (view.id) {
-            R.id.moveUpButton -> {
-                settings.floatWindowY -= delta
-                intent.action = "MOVE_FLOAT_WINDOW"
-                intent.putExtra("DELTA_X", 0)
-                intent.putExtra("DELTA_Y", -delta)
-                startService(intent)
+        try {
+            val intent = Intent(this, FloatWindowService::class.java)
+            when (view.id) {
+                R.id.moveUpButton -> {
+                    settings.floatWindowY -= delta
+                    intent.action = "MOVE_FLOAT_WINDOW"
+                    intent.putExtra("DELTA_X", 0)
+                    intent.putExtra("DELTA_Y", -delta)
+                    startService(intent)
+                }
+                R.id.moveDownButton -> {
+                    settings.floatWindowY += delta
+                    intent.action = "MOVE_FLOAT_WINDOW"
+                    intent.putExtra("DELTA_X", 0)
+                    intent.putExtra("DELTA_Y", delta)
+                    startService(intent)
+                }
+                R.id.moveLeftButton -> {
+                    settings.floatWindowX -= delta
+                    intent.action = "MOVE_FLOAT_WINDOW"
+                    intent.putExtra("DELTA_X", -delta)
+                    intent.putExtra("DELTA_Y", 0)
+                    startService(intent)
+                }
+                R.id.moveRightButton -> {
+                    settings.floatWindowX += delta
+                    intent.action = "MOVE_FLOAT_WINDOW"
+                    intent.putExtra("DELTA_X", delta)
+                    intent.putExtra("DELTA_Y", 0)
+                    startService(intent)
+                }
             }
-            R.id.moveDownButton -> {
-                settings.floatWindowY += delta
-                intent.action = "MOVE_FLOAT_WINDOW"
-                intent.putExtra("DELTA_X", 0)
-                intent.putExtra("DELTA_Y", delta)
-                startService(intent)
-            }
-            R.id.moveLeftButton -> {
-                settings.floatWindowX -= delta
-                intent.action = "MOVE_FLOAT_WINDOW"
-                intent.putExtra("DELTA_X", -delta)
-                intent.putExtra("DELTA_Y", 0)
-                startService(intent)
-            }
-            R.id.moveRightButton -> {
-                settings.floatWindowX += delta
-                intent.action = "MOVE_FLOAT_WINDOW"
-                intent.putExtra("DELTA_X", delta)
-                intent.putExtra("DELTA_Y", 0)
-                startService(intent)
-            }
+        } catch (e: Exception) {
+            Toast.makeText(this, "调整位置失败: ${e.message}", Toast.LENGTH_SHORT).show()
+            e.printStackTrace()
         }
     }
 
     // 重置位置按钮点击事件
     fun onResetPositionClick(view: android.view.View) {
-        settings.resetPosition()
-        val intent = Intent(this, FloatWindowService::class.java)
-        intent.action = "RESET_FLOAT_WINDOW"
-        startService(intent)
+        try {
+            settings.resetPosition()
+            val intent = Intent(this, FloatWindowService::class.java)
+            intent.action = "RESET_FLOAT_WINDOW"
+            startService(intent)
+        } catch (e: Exception) {
+            Toast.makeText(this, "重置位置失败: ${e.message}", Toast.LENGTH_SHORT).show()
+            e.printStackTrace()
+        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -270,10 +297,15 @@ class MainActivity : AppCompatActivity() {
         if (requestCode == REQUEST_OVERLAY_PERMISSION) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 if (SystemSettings.canDrawOverlays(this)) {
-                    // 权限已授予，开启悬浮窗
-                    startService(Intent(this, FloatWindowService::class.java))
-                    settings.isFloatWindowEnabled = true
-                    updateFloatWindowToggle()
+                    try {
+                        // 权限已授予，开启悬浮窗
+                        startService(Intent(this, FloatWindowService::class.java))
+                        settings.isFloatWindowEnabled = true
+                        updateFloatWindowToggle()
+                    } catch (e: Exception) {
+                        Toast.makeText(this, "开启悬浮窗失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                        e.printStackTrace()
+                    }
                 } else {
                     Toast.makeText(this, "需要悬浮窗权限才能使用此功能", Toast.LENGTH_SHORT).show()
                 }
@@ -285,10 +317,15 @@ class MainActivity : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == REQUEST_NOTIFICATION_PERMISSION) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // 权限已授予，开启悬浮窗
-                startService(Intent(this, FloatWindowService::class.java))
-                settings.isFloatWindowEnabled = true
-                updateFloatWindowToggle()
+                try {
+                    // 权限已授予，开启悬浮窗
+                    startService(Intent(this, FloatWindowService::class.java))
+                    settings.isFloatWindowEnabled = true
+                    updateFloatWindowToggle()
+                } catch (e: Exception) {
+                    Toast.makeText(this, "开启悬浮窗失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                    e.printStackTrace()
+                }
             } else {
                 Toast.makeText(this, "需要通知权限才能使用此功能", Toast.LENGTH_SHORT).show()
             }
