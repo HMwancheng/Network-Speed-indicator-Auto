@@ -17,23 +17,11 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    // 签名配置
-    signingConfigs {
-        release {
-            // 使用环境变量获取签名信息
-            keyAlias System.getenv("KEY_ALIAS") ?: "networkspeed"
-            keyPassword System.getenv("KEY_PASSWORD") ?: "android"
-            storeFile file(System.getenv("KEYSTORE_FILE") ?: "debug.keystore")
-            storePassword System.getenv("KEYSTORE_PASSWORD") ?: "android"
-        }
-    }
-
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            // 使用签名配置
-            signingConfig signingConfigs.release
+            // 不使用签名配置，允许生成未签名的APK文件
         }
     }
     compileOptions {
