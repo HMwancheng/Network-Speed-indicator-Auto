@@ -32,8 +32,7 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            // 使用debug签名配置，生成可安装的APK文件
-            signingConfig signingConfigs.debug
+            // 不指定signingConfig，使用Gradle默认的自动签名机制
         }
     }
     compileOptions {
