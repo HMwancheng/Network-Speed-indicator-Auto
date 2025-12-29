@@ -26,13 +26,25 @@ android {
             keyAlias "androiddebugkey"
             keyPassword "android"
         }
+        // release签名配置，支持CI/CD环境变量
+        release {
+            // 允许Gradle自动生成签名（适合开源项目和CI/CD）
+            v1SigningEnabled true
+            v2SigningEnabled true
+            // 当环境变量提供了签名信息时使用，否则使用默认的调试签名
+            storeFile file(System.getenv("RELEASE_KEYSTORE_FILE") ?: System.getenv("DEBUG_KEYSTORE_FILE") ?: "${System.getProperty('user.home')}/.android/debug.keystore")
+            storePassword System.getenv("RELEASE_KEYSTORE_PASSWORD") ?: "android"
+            keyAlias System.getenv("RELEASE_KEY_ALIAS") ?: "androiddebugkey"
+            keyPassword System.getenv("RELEASE_KEY_PASSWORD") ?: "android"
+        }
     }
 
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            // 不指定signingConfig，使用Gradle默认的自动签名机制
+            // 指定release签名配置
+            signingConfig signingConfigs.release
         }
     }
     compileOptions {
