@@ -168,10 +168,10 @@ class FloatWindowService : Service(), NetworkSpeedService.NetworkSpeedListener {
             true
         }
 
-        // 应用初始设置
-        updateFloatWindowSettings()
         // 添加悬浮窗到窗口管理器
         windowManager.addView(floatView, params)
+        // 应用初始设置
+        updateFloatWindowSettings()
     }
 
     // 更新悬浮窗设置
