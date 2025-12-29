@@ -100,7 +100,6 @@ class FloatWindowService : Service(), NetworkSpeedService.NetworkSpeedListener {
         return builder
             .setContentTitle("Network Speed Indicator")
             .setContentText("Running")
-            .setSmallIcon(R.mipmap.ic_launcher)
             .setPriority(Notification.PRIORITY_LOW)
             .build()
     }
