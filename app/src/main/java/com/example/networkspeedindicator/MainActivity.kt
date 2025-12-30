@@ -6,6 +6,8 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings as SystemSettings
 import android.widget.Button
 import android.widget.RadioButton
@@ -202,21 +204,33 @@ class MainActivity : AppCompatActivity() {
     private fun checkPermissions(): Boolean {
         // 检查悬浮窗权限
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (!SystemSettings.canDrawOverlays(this)) {
-                val intent = Intent(SystemSettings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
-                startActivityForResult(intent, REQUEST_OVERLAY_PERMISSION)
+            try {
+                if (!SystemSettings.canDrawOverlays(this)) {
+                    val intent = Intent(SystemSettings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
+                    startActivityForResult(intent, REQUEST_OVERLAY_PERMISSION)
+                    return false
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this, "检查悬浮窗权限失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                e.printStackTrace()
                 return false
             }
         }
 
         // 检查通知权限
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(
-                    this,
-                    arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),
-                    REQUEST_NOTIFICATION_PERMISSION
-                )
+            try {
+                if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(
+                        this,
+                        arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),
+                        REQUEST_NOTIFICATION_PERMISSION
+                    )
+                    return false
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this, "检查通知权限失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                e.printStackTrace()
                 return false
             }
         }
@@ -295,40 +309,48 @@ class MainActivity : AppCompatActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_OVERLAY_PERMISSION) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                if (SystemSettings.canDrawOverlays(this)) {
+            // 延迟检查权限，确保系统已更新权限状态
+            Handler(Looper.getMainLooper()).postDelayed({
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     try {
-                        // 权限已授予，开启悬浮窗
-                        startService(Intent(this, FloatWindowService::class.java))
-                        settings.isFloatWindowEnabled = true
-                        updateFloatWindowToggle()
+                        if (SystemSettings.canDrawOverlays(this)) {
+                            // 权限已授予，开启悬浮窗
+                            startService(Intent(this, FloatWindowService::class.java))
+                            settings.isFloatWindowEnabled = true
+                            updateFloatWindowToggle()
+                            Toast.makeText(this, "悬浮窗已开启", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(this, "需要悬浮窗权限才能使用此功能", Toast.LENGTH_SHORT).show()
+                        }
                     } catch (e: Exception) {
                         Toast.makeText(this, "开启悬浮窗失败: ${e.message}", Toast.LENGTH_SHORT).show()
                         e.printStackTrace()
                     }
-                } else {
-                    Toast.makeText(this, "需要悬浮窗权限才能使用此功能", Toast.LENGTH_SHORT).show()
                 }
-            }
+            }, 500) // 延迟500ms，确保系统权限已更新
         }
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == REQUEST_NOTIFICATION_PERMISSION) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                try {
-                    // 权限已授予，开启悬浮窗
-                    startService(Intent(this, FloatWindowService::class.java))
-                    settings.isFloatWindowEnabled = true
-                    updateFloatWindowToggle()
-                } catch (e: Exception) {
-                    Toast.makeText(this, "开启悬浮窗失败: ${e.message}", Toast.LENGTH_SHORT).show()
-                    e.printStackTrace()
+            // 延迟处理，确保系统已更新权限状态
+            Handler(Looper.getMainLooper()).postDelayed({
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    try {
+                        // 权限已授予，开启悬浮窗
+                        startService(Intent(this, FloatWindowService::class.java))
+                        settings.isFloatWindowEnabled = true
+                        updateFloatWindowToggle()
+                        Toast.makeText(this, "悬浮窗已开启", Toast.LENGTH_SHORT).show()
+                    } catch (e: Exception) {
+                        Toast.makeText(this, "开启悬浮窗失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                        e.printStackTrace()
+                    }
+                } else {
+                    Toast.makeText(this, "需要通知权限才能使用此功能", Toast.LENGTH_SHORT).show()
                 }
-            } else {
-                Toast.makeText(this, "需要通知权限才能使用此功能", Toast.LENGTH_SHORT).show()
-            }
+            }, 300) // 延迟300ms
         }
     }
 }

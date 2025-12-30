@@ -41,13 +41,29 @@ class FloatWindowService : Service(), NetworkSpeedService.NetworkSpeedListener {
 
     override fun onCreate() {
         super.onCreate()
-        settings = Settings(this)
-        createNotificationChannel()
-        startForeground(NOTIFICATION_ID, createNotification())
-        initFloatWindow()
-        // 启动网络速度服务
-        startService(Intent(this, NetworkSpeedService::class.java))
-        NetworkSpeedService.setListener(this)
+        try {
+            settings = Settings(this)
+            createNotificationChannel()
+            startForeground(NOTIFICATION_ID, createNotification())
+            
+            // 延迟初始化悬浮窗，确保服务完全启动
+            Handler(Looper.getMainLooper()).postDelayed({
+                try {
+                    initFloatWindow()
+                    // 启动网络速度服务
+                    startService(Intent(this, NetworkSpeedService::class.java))
+                    NetworkSpeedService.setListener(this)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    // 如果初始化失败，停止服务
+                    stopSelf()
+                }
+            }, 100)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // 如果 onCreate 失败，停止服务
+            stopSelf()
+        }
     }
 
     override fun onDestroy() {
@@ -109,73 +125,89 @@ class FloatWindowService : Service(), NetworkSpeedService.NetworkSpeedListener {
     }
 
     private fun initFloatWindow() {
-        windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-        floatView = LayoutInflater.from(this).inflate(R.layout.float_window, null)
-        networkSpeedText = floatView.findViewById(R.id.networkSpeedText)
+        try {
+            // 初始化窗口管理器
+            windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+            
+            // 检查悬浮窗权限
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (!android.provider.Settings.canDrawOverlays(this)) {
+                    throw SecurityException("缺少悬浮窗权限")
+                }
+            }
+            
+            // 初始化视图
+            floatView = LayoutInflater.from(this).inflate(R.layout.float_window, null)
+            networkSpeedText = floatView.findViewById(R.id.networkSpeedText)
 
-        // 设置WindowManager参数
-        params = WindowManager.LayoutParams().apply {
-            type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                if (settings.showAboveStatusBar) {
+            // 设置WindowManager参数
+            params = WindowManager.LayoutParams().apply {
+                type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
                 } else {
-                    WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+                    @Suppress("DEPRECATION")
+                    WindowManager.LayoutParams.TYPE_PHONE
                 }
-            } else {
-                @Suppress("DEPRECATION")
-                WindowManager.LayoutParams.TYPE_PHONE
+
+                flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                        WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                        WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+
+                format = PixelFormat.TRANSLUCENT
+                gravity = Gravity.START or Gravity.TOP
+                width = WindowManager.LayoutParams.WRAP_CONTENT
+                height = WindowManager.LayoutParams.WRAP_CONTENT
+                x = settings.floatWindowX
+                y = settings.floatWindowY
             }
 
-            flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-
-            format = PixelFormat.TRANSLUCENT
-            gravity = Gravity.START or Gravity.TOP
-            width = WindowManager.LayoutParams.WRAP_CONTENT
-            height = WindowManager.LayoutParams.WRAP_CONTENT
-            x = settings.floatWindowX
-            y = settings.floatWindowY
-        }
-
-        // 设置悬浮窗触摸事件
-        floatView.setOnTouchListener { v, event ->
-            if (settings.isPositionLocked) {
-                return@setOnTouchListener false
-            }
-
-            when (event.action) {
-                MotionEvent.ACTION_DOWN -> {
-                    isMoving = true
-                    lastX = event.rawX
-                    lastY = event.rawY
+            // 设置悬浮窗触摸事件
+            floatView.setOnTouchListener { v, event ->
+                if (settings.isPositionLocked) {
+                    return@setOnTouchListener false
                 }
-                MotionEvent.ACTION_MOVE -> {
-                    if (isMoving) {
-                        val deltaX = event.rawX - lastX
-                        val deltaY = event.rawY - lastY
-                        params?.let {
-                            it.x += deltaX.toInt()
-                            it.y += deltaY.toInt()
-                            windowManager.updateViewLayout(floatView, it)
-                            settings.floatWindowX = it.x
-                            settings.floatWindowY = it.y
-                        }
+
+                when (event.action) {
+                    MotionEvent.ACTION_DOWN -> {
+                        isMoving = true
                         lastX = event.rawX
                         lastY = event.rawY
                     }
+                    MotionEvent.ACTION_MOVE -> {
+                        if (isMoving) {
+                            val deltaX = event.rawX - lastX
+                            val deltaY = event.rawY - lastY
+                            params?.let {
+                                it.x += deltaX.toInt()
+                                it.y += deltaY.toInt()
+                                try {
+                                    windowManager.updateViewLayout(floatView, it)
+                                    settings.floatWindowX = it.x
+                                    settings.floatWindowY = it.y
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
+                            }
+                            lastX = event.rawX
+                            lastY = event.rawY
+                        }
+                    }
+                    MotionEvent.ACTION_UP -> {
+                        isMoving = false
+                    }
                 }
-                MotionEvent.ACTION_UP -> {
-                    isMoving = false
-                }
+                true
             }
-            true
-        }
 
-        // 添加悬浮窗到窗口管理器
-        windowManager.addView(floatView, params)
-        // 应用初始设置
-        updateFloatWindowSettings()
+            // 添加悬浮窗到窗口管理器
+            windowManager.addView(floatView, params)
+            
+            // 应用初始设置
+            updateFloatWindowSettings()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            throw e // 重新抛出异常，让上层处理
+        }
     }
 
     // 更新悬浮窗设置
