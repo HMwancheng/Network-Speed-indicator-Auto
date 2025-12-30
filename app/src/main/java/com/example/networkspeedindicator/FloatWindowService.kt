@@ -214,11 +214,11 @@ class FloatWindowService : Service(), NetworkSpeedService.NetworkSpeedListener {
     private fun updateFloatWindowSettings() {
         // 确保所有必要的组件都已初始化
         if (::networkSpeedText.isInitialized && ::settings.isInitialized) {
-            // 更新文字颜色
+            // 立即更新文字颜色
             networkSpeedText.setTextColor(settings.textColor)
-            // 更新文字大小
+            // 立即更新文字大小
             networkSpeedText.textSize = settings.textSize.toFloat()
-            // 更新文字对齐方式
+            // 立即更新文字对齐方式
             networkSpeedText.gravity = when (settings.textAlignment) {
                 0 -> Gravity.LEFT
                 1 -> Gravity.CENTER
@@ -237,6 +237,9 @@ class FloatWindowService : Service(), NetworkSpeedService.NetworkSpeedListener {
                     }
                 }
             }
+            // 强制重绘视图
+            networkSpeedText.invalidate()
+            floatView.invalidate()
         }
     }
 
@@ -244,13 +247,9 @@ class FloatWindowService : Service(), NetworkSpeedService.NetworkSpeedListener {
     private fun updateNetworkSpeed() {
         // 确保所有必要的组件都已初始化
         if (::settings.isInitialized && ::floatView.isInitialized && ::networkSpeedText.isInitialized) {
-            // 低速隐藏功能
-            if (settings.isLowSpeedHideEnabled && downloadSpeed < 1 && uploadSpeed < 1) {
-                floatView.visibility = View.GONE
-                return
-            } else {
-                floatView.visibility = View.VISIBLE
-            }
+            // 低速隐藏功能 - 只有明确启用且网速确实很低时才隐藏
+            val shouldHide = settings.isLowSpeedHideEnabled && downloadSpeed < 1 && uploadSpeed < 1
+            floatView.visibility = if (shouldHide) View.GONE else View.VISIBLE
 
             val speedText = when (settings.speedFormat) {
                 0 -> {

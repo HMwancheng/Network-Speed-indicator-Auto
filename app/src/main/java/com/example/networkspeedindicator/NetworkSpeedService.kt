@@ -39,11 +39,16 @@ class NetworkSpeedService : Service() {
             val currentRxBytes = TrafficStats.getTotalRxBytes()
             val currentTxBytes = TrafficStats.getTotalTxBytes()
 
-            if (lastRxBytes > 0) {
-                downloadSpeed = (currentRxBytes - lastRxBytes) / 1000 // KB/s
+            // 计算网速，即使第一次调用也返回合理值
+            downloadSpeed = if (lastRxBytes > 0) {
+                (currentRxBytes - lastRxBytes) / 1000 // KB/s
+            } else {
+                0 // 第一次调用时返回0
             }
-            if (lastTxBytes > 0) {
-                uploadSpeed = (currentTxBytes - lastTxBytes) / 1000 // KB/s
+            uploadSpeed = if (lastTxBytes > 0) {
+                (currentTxBytes - lastTxBytes) / 1000 // KB/s
+            } else {
+                0 // 第一次调用时返回0
             }
 
             lastRxBytes = currentRxBytes
