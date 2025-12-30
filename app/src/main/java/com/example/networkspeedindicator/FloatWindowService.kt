@@ -120,6 +120,7 @@ class FloatWindowService : Service(), NetworkSpeedService.NetworkSpeedListener {
         return builder
             .setContentTitle("Network Speed Indicator")
             .setContentText("Running")
+            .setSmallIcon(android.R.drawable.stat_sys_wifi_tether)
             .setPriority(Notification.PRIORITY_LOW)
             .build()
     }
